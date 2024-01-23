@@ -5,46 +5,39 @@ const cors = require("cors");
 const mongoose = require("mongoose");
 const http = require("http");
 const socketIO = require("socket.io");
-
-const route1 = require("./Routes/medals");
-const route2 = require("./Routes/medal_data");
-
-const app = express();
-const server = http.createServer(app);
-const io = socketIO(server, {
-  cors: {
-    origin: "*",
-    methods: ["GET", "POST"],
-  },
-});
-
-let dbConnection;
-let storedData = []; // Array to store data
-
-const connectToDb = (cb) => {
-  mongoose
-    .connect("mongodb://127.0.0.1:27017/medal_input", {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    })
-    .then(() => {
-      dbConnection = mongoose.connection;
-      return cb(null);
-    })
-    .catch((err) => {
-      console.error(err);
-      return cb(err);
-    });
-};
-
-const getDb = () => dbConnection;
-
+const eventRoute = require('./Routes/eventRoutes')
 const port = process.env.PORT || 5000;
-
+const app = express();
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(express.static("public"));
 app.use(cors());
+require('dotenv').config();
+let dbConnection;
+
+const databaseUrl = process.env.DATABASE_URL;
+//Database Connection
+const connectToDb = (cb) => {
+  mongoose
+  .connect(`${databaseUrl}`, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
+  .then(() => {
+    dbConnection = mongoose.connection;
+    return cb(null);
+  })
+  .catch((err) => {
+    console.error(err);
+    return cb(err);
+  });
+};
+
+const getDb = () => dbConnection;
+
+
+app.use("/events", eventRoute);
+
 
 connectToDb((err) => {
   if (err) {
@@ -52,10 +45,17 @@ connectToDb((err) => {
     return;
   }
   console.log("Connected successfully to the database");
-
-  app.use("/", route1);
-  app.use("/", route2);
-
+  
+  
+//Websocket Implementation
+  
+  const server = http.createServer(app);
+  const io = socketIO(server, {
+    cors: {
+      origin: "*",
+      methods: ["GET", "POST"],
+    },
+  });
   app.get("/getStoredDatafootball", (req, res) => {
     res.json(storedDatafootball);
   });
@@ -64,8 +64,8 @@ connectToDb((err) => {
     res.json(storedDatacricket);
   });
 
-  app.get("/getStoredDataVball", (req, res) => {
-    res.json(storedDataVball);
+  app.get("/getStoredDatavolleyball", (req, res) => {
+    res.json(storedDatavolleyball);
   });
 
   app.get("/getStoredDatakhokho", (req, res) => {
@@ -80,11 +80,11 @@ connectToDb((err) => {
     try {
       storedDatafootball = [];
       storedDatacricket = []; 
-      storedDataVball = []; 
+      storedDatavolleyball = []; 
       storedDatakabbadi=[];
       storedDatakhokho=[];
   
-      res.json({ success: true, message: "Stored data deleted successfully." });
+      res.json({ success: true, message: "Scores are reset." });
     } catch (error) {
       console.error("Error deleting stored data:", error);
       res.status(500).json({ success: false, message: "Internal server error." });
@@ -93,7 +93,7 @@ connectToDb((err) => {
 
   let storedDatafootball = [];
   let storedDatacricket = [];
-  let storedDataVball = [];
+  let storedDatavolleyball = [];
   let storedDatakhokho=[];
   let storedDatakabbadi=[];
 
@@ -101,7 +101,7 @@ connectToDb((err) => {
     console.log("A user connected");
     socket.emit("storedDatafootball", storedDatafootball);
     socket.emit("storedDatacricket", storedDatacricket);
-    socket.emit("storedDataVball", storedDataVball);
+    socket.emit("storedDatavolleyball", storedDatavolleyball);
     socket.emit("storedDatakabbadi", storedDatakabbadi);
     socket.emit("storedDatakhokho", storedDatakhokho);
 
@@ -138,8 +138,8 @@ connectToDb((err) => {
             scores: data.scores,
             teams: data.teams,
           });
-          storedDataVball=[];
-          storedDataVball.push({
+          storedDatavolleyball=[];
+          storedDatavolleyball.push({
             gameId: data.gameId,
             scores: data.scores,
             teams: data.teams,
@@ -178,6 +178,8 @@ connectToDb((err) => {
       console.log("User disconnected");
     });
   });
+
+  //Wesocket
 
   server.listen(port, () => {
     console.log(`Server is running on http://localhost:${port}`);
