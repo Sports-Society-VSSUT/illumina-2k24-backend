@@ -5,6 +5,7 @@ const cors = require("cors");
 const mongoose = require("mongoose");
 const http = require("http");
 const socketIO = require("socket.io");
+require('dotenv').config();
 const eventRoute = require('./Routes/eventRoutes')
 const port = process.env.PORT || 5000;
 const app = express();
@@ -12,7 +13,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(express.static("public"));
 app.use(cors());
-require('dotenv').config();
+
 let dbConnection;
 
 const databaseUrl = process.env.DATABASE_URL;
