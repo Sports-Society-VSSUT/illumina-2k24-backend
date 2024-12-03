@@ -76,6 +76,10 @@ connectToDb((err) => {
     res.json(storedDatakabbadi);
   });
 
+  app.get("/getStoredDatabadminton", (req, res) => {
+    res.json(storedDatabadminton);
+  });
+
   app.delete("/deleteStoredData", (req, res) => {
     try {
       storedDatafootball = [];
@@ -83,6 +87,7 @@ connectToDb((err) => {
       storedDatavolleyball = []; 
       storedDatakabbadi=[];
       storedDatakhokho=[];
+      storedDatabadminton=[];
   
       res.json({ success: true, message: "Scores are reset." });
     } catch (error) {
@@ -96,6 +101,7 @@ connectToDb((err) => {
   let storedDatavolleyball = [];
   let storedDatakhokho=[];
   let storedDatakabbadi=[];
+  let storedDatabadminton=[];
 
   io.on("connection", (socket) => {
     console.log("A user connected");
@@ -104,6 +110,7 @@ connectToDb((err) => {
     socket.emit("storedDatavolleyball", storedDatavolleyball);
     socket.emit("storedDatakabbadi", storedDatakabbadi);
     socket.emit("storedDatakhokho", storedDatakhokho);
+    socket.emit("storedDatabadminton", storedDatabadminton);
 
     socket.on("updateScore", (data) => {
       try {
@@ -168,7 +175,20 @@ connectToDb((err) => {
             scores: data.scores,
             teams: data.teams,
           });
+        }else if(data.gameId === "badminton"){
+          io.emit("scoreUpdatedbadminton", {
+            gameId: data.gameId,
+            scores: data.scores,
+            teams: data.teams,
+          });
+          storedDatabadminton=[];
+          storedDatabadminton.push({
+            gameId: data.gameId,
+            scores: data.scores,
+            teams: data.teams,
+          });
         }
+
       } catch (error) {
         console.error("Error emitting scoreUpdated event:", error);
       }
